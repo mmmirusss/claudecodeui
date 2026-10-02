@@ -1,7 +1,8 @@
-import { beforeEach, describe, expect, test, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest';
 
 import { voicePlayer } from '@/modules/chat/utils/voicePlayer';
-import { fakeResponse, installAudioFakes } from '@/modules/chat/voice/tests/kit';
+import { fakeResponse, installAudioFakes, setUiPreferences } from '@/modules/chat/voice/tests/kit';
+import { resetUserPreferences } from '@/shared/userSettings';
 import type * as SharedApi from '@/shared/api';
 
 const h = vi.hoisted(() => ({ tts: vi.fn() }));
@@ -92,5 +93,55 @@ describe('voicePlayer (U7, KTD9)', () => {
     expect(voicePlayer.current().state).toBe('playing');
     voicePlayer.stopAuto();
     expect(voicePlayer.current().state).toBe('playing');
+  });
+});
+
+describe('voicePlayer playback rate („Tempo řeči")', () => {
+  afterEach(() => {
+    localStorage.clear();
+    resetUserPreferences();
+  });
+
+  test('without a stored rate, a reply plays at 1x with the pitch preserved', async () => {
+    voicePlayer.speak(line(), always);
+    await flush();
+    expect(media.rates.at(-1)).toBe(1);
+    expect(media.preservesPitch.at(-1)).toBe(true);
+  });
+
+  test('auto-speak, the read-aloud button and a replay all play at the stored rate', async () => {
+    await setUiPreferences({ voiceEnabled: true, voiceRate: 1.3 });
+    const id = voicePlayer.speak(line(), always);
+    await flush();
+    expect(media.rates.at(-1)).toBe(1.3);
+
+    voicePlayer.toggle(line());
+    await flush();
+    expect(media.rates.at(-1)).toBe(1.3);
+
+    expect(voicePlayer.replay(id)).toBe(true);
+    await flush();
+    expect(media.rates.at(-1)).toBe(1.3);
+    expect(media.preservesPitch.every(Boolean)).toBe(true);
+  });
+
+  test('a rate changed while a reply plays reaches that reply at once, without a second play()', async () => {
+    voicePlayer.speak(line(), always);
+    await flush();
+    const plays = media.play;
+    const element = media.elements.at(-1);
+    expect(element?.playbackRate).toBe(1);
+
+    await setUiPreferences({ voiceEnabled: true, voiceRate: 1.45 });
+    expect(element?.playbackRate).toBe(1.45);
+    expect(element?.defaultPlaybackRate).toBe(1.45);
+    expect(media.play).toBe(plays);
+  });
+
+  test('an out-of-range stored rate is clamped before it reaches the element', async () => {
+    await setUiPreferences({ voiceEnabled: true, voiceRate: 4 });
+    voicePlayer.speak(line(), always);
+    await flush();
+    expect(media.rates.at(-1)).toBe(1.5);
   });
 });

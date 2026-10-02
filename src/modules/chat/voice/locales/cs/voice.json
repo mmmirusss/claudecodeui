@@ -8,6 +8,13 @@
     "shortOn": "Předčítání: zapnuto",
     "shortOff": "Předčítání: vypnuto"
   },
+  "rate": {
+    "label": "Tempo řeči",
+    "hint": "Jak rychle se odpovědi předčítají. 1× je tempo hlasové služby, výška hlasu se nemění.",
+    "unavailable": "Nejdřív zapněte hlas.",
+    "value": "{{rate}}×",
+    "valueText": "{{rate}}násobek běžného tempa"
+  },
   "playback": {
     "stop": "Zastavit předčítání",
     "loading": "Připravuji hlasovou odpověď…",

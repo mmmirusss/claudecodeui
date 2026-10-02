@@ -88,7 +88,10 @@ describe('voice locales', () => {
   });
 
   test('the Czech copy is Czech, not a copy of the English', () => {
-    const same = Object.keys(cs).filter((key) => cs[key] === en[key]);
+    // `rate.value` is only "<number>×": the number is formatted per language by
+    // Intl (1,25 / 1.25), so its template is rightly the same in both files.
+    const SAME_IN_BOTH = new Set(['rate.value']);
+    const same = Object.keys(cs).filter((key) => cs[key] === en[key] && !SAME_IN_BOTH.has(key));
     expect(same).toEqual([]);
   });
 

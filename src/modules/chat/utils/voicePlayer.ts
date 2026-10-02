@@ -1,6 +1,8 @@
 import { synthesizeVoice, voiceConfigSignature } from '@/shared/api';
 import type { VoicePlayState, VoiceSnapshot } from '@/shared/types';
 import { voiceErrorFromException, voiceErrorFromResponse, VoiceRequestError } from '@/modules/chat/voice/voiceErrors';
+import { readStoredUiPreferences } from '@/shared/uiPreferences';
+import { subscribeToUserPreferences } from '@/shared/userSettings';
 
 // A single app-level audio player for read-aloud. It owns one <audio> element, lives
 // outside the React tree, and caches generated audio by content. Because playback is not
@@ -67,8 +69,24 @@ class VoicePlayer {
         if (this.state === 'playing') this.onEnded();
       });
       this.audio = audio;
+      // „Tempo řeči": a change of the preference reaches a reply that is already playing.
+      subscribeToUserPreferences(() => this.applyRate());
     }
     return this.audio;
+  }
+
+  /**
+   * The builder's playback rate (`voiceRate`, 1 to 1.5), pitch preserved. Sets the default
+   * rate too, because load() resets `playbackRate` to it; called after every load() and on
+   * every preference change, so auto-speak, the read-aloud button and a replay all follow it.
+   */
+  private applyRate() {
+    const audio = this.audio;
+    if (!audio) return;
+    const rate = readStoredUiPreferences().voiceRate;
+    audio.preservesPitch = true;
+    if (audio.defaultPlaybackRate !== rate) audio.defaultPlaybackRate = rate;
+    if (audio.playbackRate !== rate) audio.playbackRate = rate;
   }
 
   // Call synchronously from the click handler so iOS grants the (reused) element playback.
@@ -201,6 +219,7 @@ class VoicePlayer {
       if (myToken !== this.token) return;
       audio.src = url;
       audio.load();
+      this.applyRate();
       await audio.play();
       if (myToken !== this.token) return;
       this.state = 'playing';

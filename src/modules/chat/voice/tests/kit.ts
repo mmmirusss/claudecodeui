@@ -14,15 +14,26 @@ HTMLMediaElement.prototype.play = function play() {
   return Promise.resolve();
 };
 
-export type MediaCalls = { play: number; pause: number; srcs: string[] };
+/** Per play(): the element, and the rate and pitch setting it had at that moment. */
+export type MediaCalls = {
+  play: number;
+  pause: number;
+  srcs: string[];
+  rates: number[];
+  preservesPitch: boolean[];
+  elements: HTMLMediaElement[];
+};
 
 /** `<audio>` fakes. `playResult` decides what `play()` does on the NEXT calls. */
 export function installAudioFakes(): MediaCalls & { refuseNextPlay: (name?: string) => void } {
-  const calls: MediaCalls = { play: 0, pause: 0, srcs: [] };
+  const calls: MediaCalls = { play: 0, pause: 0, srcs: [], rates: [], preservesPitch: [], elements: [] };
   let refusal: string | null = null;
   vi.spyOn(HTMLMediaElement.prototype, 'play').mockImplementation(function play(this: HTMLMediaElement) {
     calls.play += 1;
     calls.srcs.push(this.src);
+    calls.rates.push(this.playbackRate);
+    calls.preservesPitch.push(this.preservesPitch);
+    calls.elements.push(this);
     if (refusal) {
       const name = refusal;
       refusal = null;
@@ -88,7 +99,7 @@ export function installRecorderFakes(options: { bytes?: number } = {}) {
 }
 
 /** Sets the stored UI preferences the voice code reads synchronously. */
-export async function setUiPreferences(values: Record<string, boolean>) {
+export async function setUiPreferences(values: Record<string, boolean | number>) {
   const { writeUserPreference } = await import('@/shared/userSettings');
   writeUserPreference('uiPreferences', values);
 }

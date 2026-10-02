@@ -8,6 +8,13 @@
     "shortOn": "Read aloud: on",
     "shortOff": "Read aloud: off"
   },
+  "rate": {
+    "label": "Speech tempo",
+    "hint": "How fast replies are read aloud. 1× is the voice service's own tempo; the pitch stays the same.",
+    "unavailable": "Turn voice on first.",
+    "value": "{{rate}}×",
+    "valueText": "{{rate}} times the normal tempo"
+  },
   "playback": {
     "stop": "Stop reading aloud",
     "loading": "Preparing the spoken reply…",
